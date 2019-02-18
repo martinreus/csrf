@@ -65,7 +65,7 @@ func (instance *csrf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
         frontEndHeaderValue := r.Header.Get(instance.HeaderName)
         // checks if CSRF value set by the user in the front end matches with the cookie set by the backend
-        if !(frontEndHeaderValue == "" || backendSetCookie.Value == frontEndHeaderValue) {
+        if frontEndHeaderValue == "" || backendSetCookie.Value != frontEndHeaderValue {
             // if it doesn't, write unauthorized
             http.Error(w,
                 fmt.Sprintf("%s and %s values do not match.",
