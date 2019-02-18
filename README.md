@@ -38,8 +38,9 @@ Just read the value received in cookie "CSRF-Token" and send it in a header name
 
 ### TODO
 
-Tests!!!!!!! Help is welcome =D
+- Tests!!!!!!! Help is welcome =D
+- Generate HMAC token instead of purely UUID generated one. This is to prevent clients generating and setting Cookies on the fly. Does not however solve XSS attacks, which still have to be prevented by the front end framework of your choice.
 
-### I Want to help
+### I WANT TO HELP
 Yes, please
 
