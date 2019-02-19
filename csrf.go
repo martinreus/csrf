@@ -52,7 +52,13 @@ func CookieCSRF(options ...Option) func(http.Handler) http.Handler {
     }
 }
 
+/**
+  TODO: HMAC verification
+ */
 func (instance *csrf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    // always write a new value for the CSRF token to mitigate BREACH attacks
+    instance.writeNewCSRFCookie(w)
+
     // check if request method requires CSRF token to be checked
     if !contains(safeMethods, r.Method) {
         // if it does, check if user has a CSRF-Token Cookie and its corresponding X-CSRF-Token header value.
@@ -66,7 +72,7 @@ func (instance *csrf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         frontEndHeaderValue := r.Header.Get(instance.HeaderName)
         // checks if CSRF value set by the user in the front end matches with the cookie set by the backend
         if frontEndHeaderValue == "" || backendSetCookie.Value != frontEndHeaderValue {
-            // if it doesn't, write unauthorized
+            // if it doesn't, write forbidden
             http.Error(w,
                 fmt.Sprintf("%s and %s values do not match.",
                     instance.CookieOpts.CookieName, instance.HeaderName),
@@ -75,13 +81,13 @@ func (instance *csrf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    // For each request create a new CSRF-Token in order to mitigate BREACH attacks.
-    instance.writeNewCSRFCookie(w)
+    // serve next handler in chain, csrf check was successful
     instance.NextHandler.ServeHTTP(w, r)
 }
 
 /**
   Writes a new CSRF Cookie with a randomly generated UUID.
+  TODO: HMAC generation
 */
 func (instance *csrf) writeNewCSRFCookie(w http.ResponseWriter) {
     cookieOpts := instance.CookieOpts
