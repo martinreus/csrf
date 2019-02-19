@@ -39,8 +39,9 @@ Hint: nothing needs to be done for Angular apps, as angular already handles this
 
 ### TODO
 
-Tests!!!!!!! Help is welcome =D
+- Tests!!!!!!! Help is welcome =D
+- Generate HMAC token instead of purely UUID generated one. This is to prevent clients generating and setting Cookies on the fly. Does not however solve XSS attacks, which still have to be prevented by the front end framework of your choice.
 
-### I Want to help
+### I WANT TO HELP
 Yes, please
 
