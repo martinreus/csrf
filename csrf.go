@@ -33,13 +33,13 @@ func CookieCSRF(options ...Option) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
         csrfInstance := &csrf{
             CookieOpts: cookieOpts{
-                CookieName: "CSRF-Token",
+                CookieName: "XSRF-TOKEN",
                 MaxAge:     3600 * 12,
                 Secure:     true,  // always transmit sensible data only over TLS connections!
                 HttpOnly:   false, // should be readable by the client, so that it can be set in the headers of a request. Be sure to protect against XSS attacks
                 CookiePath: "/",
             },
-            HeaderName:  "X-CSRF-Token",
+            HeaderName:  "X-XSRF-TOKEN",
             NextHandler: next,
         }
 
