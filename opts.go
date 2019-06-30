@@ -1,13 +1,13 @@
 package csrf
 
-type Option func(*csrf)
+type Option func(*csrfConfig)
 
 /**
   Configure the token name to use when setting the Set-Cookie header.
   Defaults to CSRF-Token
  */
 func CookieName(name string) Option {
-    return func(c *csrf) {
+    return func(c *csrfConfig) {
         c.CookieOpts.CookieName = name
     }
 }
@@ -17,7 +17,7 @@ func CookieName(name string) Option {
   Defaults to 12 hours
 */
 func MaxAge(age int) Option {
-    return func(c *csrf) {
+    return func(c *csrfConfig) {
         c.CookieOpts.MaxAge = age
     }
 }
@@ -27,7 +27,7 @@ func MaxAge(age int) Option {
   Defaults to true
 */
 func Secure(secure bool) Option {
-    return func(c *csrf) {
+    return func(c *csrfConfig) {
         c.CookieOpts.Secure = secure
     }
 }
@@ -37,7 +37,7 @@ func Secure(secure bool) Option {
   Defaults to X-CSRF-Token.
 */
 func HeaderName(headerName string) Option {
-    return func(c *csrf) {
+    return func(c *csrfConfig) {
         c.HeaderName = headerName
     }
 }

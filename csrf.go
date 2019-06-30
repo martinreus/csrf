@@ -15,7 +15,7 @@ type cookieOpts struct {
     MaxAge     int
 }
 
-type csrf struct {
+type csrfConfig struct {
     CookieOpts cookieOpts
     // Header name which the client of the JSON Api needs to set when sending a request for non-idempotent methods.
     // Defaults to X-CSRF-Token
@@ -31,7 +31,7 @@ var (
 
 func CookieCSRF(options ...Option) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
-        csrfInstance := &csrf{
+        csrfInstance := csrfConfig{
             CookieOpts: cookieOpts{
                 CookieName: "XSRF-TOKEN",
                 MaxAge:     3600 * 12,
@@ -45,7 +45,7 @@ func CookieCSRF(options ...Option) func(http.Handler) http.Handler {
 
         // override default values with ones set by user
         for _, option := range options {
-            option(csrfInstance)
+            option(&csrfInstance)
         }
 
         return csrfInstance
@@ -55,7 +55,7 @@ func CookieCSRF(options ...Option) func(http.Handler) http.Handler {
 /**
   TODO: HMAC verification
  */
-func (instance *csrf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (instance csrfConfig) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     // always write a new value for the CSRF token to mitigate BREACH attacks
     instance.writeNewCSRFCookie(w)
 
@@ -89,7 +89,7 @@ func (instance *csrf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
   Writes a new CSRF Cookie with a randomly generated UUID.
   TODO: HMAC generation
 */
-func (instance *csrf) writeNewCSRFCookie(w http.ResponseWriter) {
+func (instance csrfConfig) writeNewCSRFCookie(w http.ResponseWriter) {
     cookieOpts := instance.CookieOpts
 
     http.SetCookie(w, &http.Cookie{
