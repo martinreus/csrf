@@ -33,7 +33,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {...}
 ```
 
 #### Front end
-Just read the value received in cookie "CSRF-Token" and send it in a header named "X-CSRF-Token" of a new request.
+Just read the value received in cookie "XSRF-TOKEN" and send it in a header named "X-XSRF-TOKEN" of a new request.
 
 Hint: nothing needs to be done for Angular apps, as angular already handles this automatically for us ;)
 
