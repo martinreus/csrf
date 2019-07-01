@@ -15,13 +15,15 @@ type cookieOpts struct {
     MaxAge     int
 }
 
-type csrf struct {
+type csrfConfig struct {
     CookieOpts cookieOpts
     // Header name which the client of the JSON Api needs to set when sending a request for non-idempotent methods.
     // Defaults to X-CSRF-Token
     HeaderName string
     // defaultAge sets the default MaxAge for cookies.
-    NextHandler http.Handler
+    NextHandler    http.Handler
+    // skip CSRF protection if client is not a browser. Defaults to false.
+    SkipNonBrowser bool
 }
 
 var (
@@ -31,7 +33,7 @@ var (
 
 func CookieCSRF(options ...Option) func(http.Handler) http.Handler {
     return func(next http.Handler) http.Handler {
-        csrfInstance := &csrf{
+        csrfInstance := csrfConfig{
             CookieOpts: cookieOpts{
                 CookieName: "XSRF-TOKEN",
                 MaxAge:     3600 * 12,
@@ -41,11 +43,12 @@ func CookieCSRF(options ...Option) func(http.Handler) http.Handler {
             },
             HeaderName:  "X-XSRF-TOKEN",
             NextHandler: next,
+            SkipNonBrowser: false,
         }
 
         // override default values with ones set by user
         for _, option := range options {
-            option(csrfInstance)
+            option(&csrfInstance)
         }
 
         return csrfInstance
@@ -55,12 +58,12 @@ func CookieCSRF(options ...Option) func(http.Handler) http.Handler {
 /**
   TODO: HMAC verification
  */
-func (instance *csrf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (instance csrfConfig) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     // always write a new value for the CSRF token to mitigate BREACH attacks
     instance.writeNewCSRFCookie(w)
 
     // check if request method requires CSRF token to be checked
-    if !contains(safeMethods, r.Method) {
+    if instance.shouldCheckCSRFHeader(r) && !contains(safeMethods, r.Method) {
         // if it does, check if user has a CSRF-Token Cookie and its corresponding X-CSRF-Token header value.
         // Check if they match. If so, call the next handler in chain. If it doesn't, deny access.
         backendSetCookie, err := r.Cookie(instance.CookieOpts.CookieName)
@@ -86,10 +89,26 @@ func (instance *csrf) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 /**
+    CSRF should only checked when user Agent is a browser, or always provided that SkipNonBrowser is false
+ */
+func (instance csrfConfig) shouldCheckCSRFHeader(r *http.Request) bool {
+    userAgent := r.Header.Get("user-agent")
+
+    // if agent is not set (so most definitely not a browser)
+    if userAgent == "" {
+        // CSRF headers should only be checked if SkipNonBrowser = true
+        return !instance.SkipNonBrowser
+    } else {
+        // otherwise it should ALWAYS be checked.
+        return true
+    }
+}
+
+/**
   Writes a new CSRF Cookie with a randomly generated UUID.
   TODO: HMAC generation
 */
-func (instance *csrf) writeNewCSRFCookie(w http.ResponseWriter) {
+func (instance csrfConfig) writeNewCSRFCookie(w http.ResponseWriter) {
     cookieOpts := instance.CookieOpts
 
     http.SetCookie(w, &http.Cookie{

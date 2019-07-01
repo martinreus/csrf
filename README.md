@@ -33,13 +33,12 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {...}
 ```
 
 #### Front end
-Just read the value received in cookie "CSRF-Token" and send it in a header named "X-CSRF-Token" of a new request.
+Just read the value received in cookie "XSRF-TOKEN" and send it in a header named "X-XSRF-TOKEN" of a new request.
 
 Hint: nothing needs to be done for Angular apps, as angular already handles this automatically for us ;)
 
 ### TODO
 
-- Tests!!!!!!! Help is welcome =D
 - Generate HMAC token instead of purely UUID generated one. This is to prevent clients generating and setting Cookies on the fly. Does not however solve XSS attacks, which still have to be prevented by the front end framework of your choice.
 
 ### I WANT TO HELP
