@@ -21,7 +21,9 @@ type csrfConfig struct {
     // Defaults to X-CSRF-Token
     HeaderName string
     // defaultAge sets the default MaxAge for cookies.
-    NextHandler http.Handler
+    NextHandler    http.Handler
+    // skip CSRF protection if client is not a browser. Defaults to false.
+    SkipNonBrowser bool
 }
 
 var (
@@ -41,6 +43,7 @@ func CookieCSRF(options ...Option) func(http.Handler) http.Handler {
             },
             HeaderName:  "X-XSRF-TOKEN",
             NextHandler: next,
+            SkipNonBrowser: false,
         }
 
         // override default values with ones set by user
@@ -60,7 +63,7 @@ func (instance csrfConfig) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     instance.writeNewCSRFCookie(w)
 
     // check if request method requires CSRF token to be checked
-    if !contains(safeMethods, r.Method) {
+    if instance.shouldCheckCSRFHeader(r) && !contains(safeMethods, r.Method) {
         // if it does, check if user has a CSRF-Token Cookie and its corresponding X-CSRF-Token header value.
         // Check if they match. If so, call the next handler in chain. If it doesn't, deny access.
         backendSetCookie, err := r.Cookie(instance.CookieOpts.CookieName)
@@ -83,6 +86,22 @@ func (instance csrfConfig) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
     // serve next handler in chain, csrf check was successful
     instance.NextHandler.ServeHTTP(w, r)
+}
+
+/**
+    CSRF should only checked when user Agent is a browser, or always provided that SkipNonBrowser is false
+ */
+func (instance csrfConfig) shouldCheckCSRFHeader(r *http.Request) bool {
+    userAgent := r.Header.Get("user-agent")
+
+    // if agent is not set (so most definitely not a browser)
+    if userAgent == "" {
+        // CSRF headers should only be checked if SkipNonBrowser = true
+        return !instance.SkipNonBrowser
+    } else {
+        // otherwise it should ALWAYS be checked.
+        return true
+    }
 }
 
 /**

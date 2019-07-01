@@ -42,3 +42,11 @@ func HeaderName(headerName string) Option {
     }
 }
 
+/**
+  Configure if CSRF protection should be skipped if client is not a Browser. Defaults to false (don't skip)
+ */
+func SkipNonBrowserAgent(skip bool) Option {
+    return func(c *csrfConfig) {
+        c.SkipNonBrowser = skip
+    }
+}
