@@ -98,6 +98,22 @@ func TestShouldNotInvokeNextHandlerWhenNonBrowserAndNoSkipping(t *testing.T) {
    }
 }
 
+func TestShouldSkipWhenGetMethod(t *testing.T) {
+    // given
+    nextHandler, csrfHandler := newCSRFHandler()
+
+    req, rr := reqAndResponses(t, "GET", emptyMap, emptyMap)
+    handler := http.HandlerFunc(csrfHandler.ServeHTTP)
+
+    // when
+    handler.ServeHTTP(rr, req)
+
+    // then
+    if !nextHandler.WasInvoked {
+        t.Error("Next handler method was not invoked when it should have been.")
+    }
+}
+
 func TestShouldNotInvokeNextHandlerWhenIsBrowserAndNoCSRFHeaderIsFound(t *testing.T) {
     // given
     nextHandler := mockHandler{}
@@ -263,9 +279,9 @@ func reqAndResponses(t *testing.T, method string, headers map[string]string, coo
     return req, rr
 }
 
-func newCSRFHandler() (mockHandler, http.Handler) {
-    mockHandler := mockHandler{}
-    csrfHandler := CookieCSRF()(&mockHandler)
+func newCSRFHandler() (*mockHandler, http.Handler) {
+    mockHandler := &mockHandler{}
+    csrfHandler := CookieCSRF()(mockHandler)
 
     return mockHandler, csrfHandler
 }
