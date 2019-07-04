@@ -8,6 +8,10 @@ import (
     "testing"
 )
 
+/**
+    TODO: Remove repeated code :)
+ */
+
 func TestShouldSetDefaults(t *testing.T) {
     // given
     var nextHandler http.Handler

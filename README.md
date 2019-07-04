@@ -18,6 +18,9 @@ import (
 func main() {
     r := mux.NewRouter()
     csrfMiddleware := csrf.CookieCSRF()
+    
+    // if you want to chage default options of the filter,
+    // csrf.CookieCSRF(csrf.Secure(false), csrf.SkipNonBrowserAgent(true))
 
     api := r.PathPrefix("/api").Subrouter()
     api.Use(csrfMiddleware)
