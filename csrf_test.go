@@ -1,80 +1,76 @@
 package csrf
 
 import (
-    "encoding/json"
     "fmt"
     "net/http"
     "net/http/httptest"
+    "reflect"
     "testing"
 )
 
 /**
     TODO: Remove repeated code :)
  */
+var emptyMap = make(map[string]string)
 
 func TestShouldSetDefaults(t *testing.T) {
     // given
     var nextHandler http.Handler
-    expected := csrfConfig{CookieOpts: cookieOpts{
-            CookieName: "XSRF-TOKEN",
-            CookiePath: "/",
-            HttpOnly: false,
-            MaxAge: 43200,
-            Secure: true,
-        },
-        HeaderName: "X-XSRF-TOKEN",
-        NextHandler: nextHandler,
-        SkipNonBrowser: false,
-    }
-    expectedBytes, _ := json.Marshal(expected)
 
     // when
     cookieCSRF := CookieCSRF()
     config := cookieCSRF(nextHandler)
-    configBytes, _ := json.Marshal(config)
 
     // then
-    if config != expected {
-        t.Error(fmt.Sprintf("expected CSRF config is different than config. \n Expected: %s \n Generated: %s", string(expectedBytes), string(configBytes)))
+    if actual, ok := config.(csrfConfig); ok {
+        if actual.HeaderName != "X-XSRF-TOKEN" ||
+            actual.NextHandler != nextHandler ||
+            actual.SkipUserAgents != nil ||
+            actual.CookieOpts.Secure != true ||
+            actual.CookieOpts.CookiePath != "/" ||
+            actual.CookieOpts.HttpOnly != false ||
+            actual.CookieOpts.MaxAge != 43200 ||
+            actual.CookieOpts.CookieName != "XSRF-TOKEN" {
+            t.Error("expected CSRF config is different than config.")
+        }
+    } else {
+        t.Error("Cannot cast config to csrfConfig")
     }
 }
-
-var emptyMap = make(map[string]string)
 
 func TestShouldSetDefaultWithChangedOptions(t *testing.T) {
     // given
     var nextHandler http.Handler
-    expected := csrfConfig{CookieOpts: cookieOpts{
-            CookieName: "ASD",
-            CookiePath: "/",
-            HttpOnly: false,
-            MaxAge: 10,
-            Secure: false,
-
-        },
-        HeaderName: "XASD",
-        NextHandler: nextHandler,
-        SkipNonBrowser: true,
-    }
-    expectedBytes, _ := json.Marshal(expected)
 
     // when
-    cookieCSRF := CookieCSRF(Secure(false), MaxAge(10), CookieName("ASD"), HeaderName("XASD"), SkipNonBrowserAgent(true))
+    cookieCSRF := CookieCSRF(Secure(false), MaxAge(10), CookieName("ASD"), HeaderName("XASD"), SkipUserAgents("Test"))
     config := cookieCSRF(nextHandler)
-    configBytes, _ := json.Marshal(config)
 
-    // then
-    if config != expected {
-        t.Error(fmt.Sprintf("expected CSRF config is different than config. \n Expected: %s \n Generated: %s", string(expectedBytes), string(configBytes)))
+    if actual, ok := config.(csrfConfig); ok {
+        if actual.HeaderName != "XASD" ||
+            actual.NextHandler != nextHandler ||
+            !reflect.DeepEqual(actual.SkipUserAgents, []string{"Test"}) ||
+            actual.CookieOpts.Secure != false ||
+            actual.CookieOpts.CookiePath != "/" ||
+            actual.CookieOpts.HttpOnly != false ||
+            actual.CookieOpts.MaxAge != 10 ||
+            actual.CookieOpts.CookieName != "ASD" {
+            t.Error("expected CSRF config is different than config.")
+        }
+    } else {
+        t.Error("Cannot cast config to csrfConfig")
     }
 }
 
 func TestSkippingMiddlewareWhenNonBrowser(t *testing.T) {
     // given
     nextHandler := mockHandler{}
-    csrfHandler := CookieCSRF(SkipNonBrowserAgent(true))(&nextHandler)
+    csrfHandler := CookieCSRF(SkipUserAgents("Test"))(&nextHandler)
 
-    req, rr := reqAndResponses(t, "POST", emptyMap, emptyMap)
+    headers := make(map[string]string)
+    headers["User-Agent"] = "Test"
+
+    req, rr := reqAndResponses(t, "POST", headers, emptyMap)
     handler := http.HandlerFunc(csrfHandler.ServeHTTP)
 
     // when
@@ -122,10 +118,10 @@ func TestShouldNotInvokeNextHandlerWhenIsBrowserAndNoCSRFHeaderIsFound(t *testin
     // given
     nextHandler := mockHandler{}
     // bonus: we skip non browsers, effectively checking if it enters the check, which it should
-    csrfHandler := CookieCSRF(SkipNonBrowserAgent(true))(&nextHandler)
+    csrfHandler := CookieCSRF()(&nextHandler)
 
     headers := make(map[string]string)
-    headers["user-agent"] = "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.90 Mobile Safari/537.36"
+    headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.90 Mobile Safari/537.36"
 
     req, rr := reqAndResponses(t, "POST", headers, emptyMap)
     handler := http.HandlerFunc(csrfHandler.ServeHTTP)
@@ -158,10 +154,10 @@ func TestShouldNotInvokeNextHandlerWhenIsBrowserAndNoXSRFHeaderIsFound(t *testin
     // given
     nextHandler := mockHandler{}
     // bonus: we skip non browsers, effectively checking if it enters the check, which it should
-    csrfHandler := CookieCSRF(SkipNonBrowserAgent(true))(&nextHandler)
+    csrfHandler := CookieCSRF(SkipUserAgents("Test"))(&nextHandler)
 
     headers := make(map[string]string)
-    headers["user-agent"] = "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.90 Mobile Safari/537.36"
+    headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.90 Mobile Safari/537.36"
 
     cookies := make(map[string]string)
     cookies["XSRF-TOKEN"] = "SOMETHING"
@@ -197,10 +193,10 @@ func TestShouldNotInvokeNextHandlerWhenIsBrowserAndNoCSRFHeaderAndCookiesDoNotMa
     // given
     nextHandler := mockHandler{}
     // bonus: we skip non browsers, effectively checking if it enters the check, which it should
-    csrfHandler := CookieCSRF(SkipNonBrowserAgent(true))(&nextHandler)
+    csrfHandler := CookieCSRF(SkipUserAgents("Test"))(&nextHandler)
 
     headers := make(map[string]string)
-    headers["user-agent"] = "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.90 Mobile Safari/537.36"
+    headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.90 Mobile Safari/537.36"
     headers["X-XSRF-TOKEN"] = "SOMETHING WHICH IS DIFFERENT FROM COOKIE"
 
     cookies := make(map[string]string)
@@ -237,10 +233,10 @@ func TestShouldSuccessfullyInvokeNextHandlerWhenIsBrowserAndCSRFHeaderAndCookies
     // given
     nextHandler := mockHandler{}
     // bonus: we skip non browsers, effectively checking if it enters the check, which it should
-    csrfHandler := CookieCSRF(SkipNonBrowserAgent(true))(&nextHandler)
+    csrfHandler := CookieCSRF(SkipUserAgents(""))(&nextHandler)
 
     headers := make(map[string]string)
-    headers["user-agent"] = "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.90 Mobile Safari/537.36"
+    headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.90 Mobile Safari/537.36"
     headers["X-XSRF-TOKEN"] = "SOMETHING"
 
     cookies := make(map[string]string)
