@@ -1,4 +1,5 @@
 ## CSRF Protection middleware for Go
+![Build Status](https://travis-ci.org/martinreus/csrf.svg?branch=master)
 
 This library implements a very lean CSRF filter for go applications, focused on REST API's.
 
