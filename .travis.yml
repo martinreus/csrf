@@ -7,7 +7,7 @@ language: go
 # These will both be unnecessary when Go 1.13 lands.
 env:
   - GO111MODULE=on
-  - GOFLAGS='-mod vendor'
+#  - GOFLAGS='-mod vendor'
 
 # You don't need to test on very old versions of the Go compiler. It's the user's
 # responsibility to keep their compiler up to date.
@@ -20,7 +20,7 @@ git:
 
 # Skip the install step. Don't `go get` dependencies. Only build with the code
 # in vendor/
-install: true
+# install: true
 
 # Don't email me the results of the test runs.
 notifications:
