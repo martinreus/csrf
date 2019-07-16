@@ -21,7 +21,7 @@ func main() {
     csrfMiddleware := csrf.CookieCSRF()
     
     // if you want to chage default options of the filter,
-    // csrf.CookieCSRF(csrf.Secure(false), csrf.SkipNonBrowserAgent(true))
+    // csrf.CookieCSRF(csrf.Secure(false), csrf.SkipUserAgents("user-service-agent"))
 
     api := r.PathPrefix("/api").Subrouter()
     api.Use(csrfMiddleware)
