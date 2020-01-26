@@ -1,4 +1,5 @@
 ## CSRF Protection middleware for Go
+![Build Status](https://travis-ci.org/martinreus/csrf.svg?branch=master)
 
 This library implements a very lean CSRF filter for go applications, focused on REST API's.
 
@@ -20,7 +21,7 @@ func main() {
     csrfMiddleware := csrf.CookieCSRF()
     
     // if you want to chage default options of the filter,
-    // csrf.CookieCSRF(csrf.Secure(false), csrf.SkipNonBrowserAgent(true))
+    // csrf.CookieCSRF(csrf.Secure(false), csrf.SkipUserAgents("user-service-agent"))
 
     api := r.PathPrefix("/api").Subrouter()
     api.Use(csrfMiddleware)
